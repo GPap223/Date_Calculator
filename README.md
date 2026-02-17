@@ -22,7 +22,7 @@ HTML5 (Single File Component)
 
 React.js (via CDN for easy execution)
 
-Tailwind CSS (for design)
+Tailwind CSS (for styling)
 
 Lucide React (for icons)
 
@@ -30,7 +30,7 @@ Lucide React (for icons)
 
 Since the app is Self-Contained (all in one file), no installation is needed!
 
-Download the index.html file.
+Download the index.html file from this repository.
 
 Open it with any web browser (Chrome, Edge, Firefox).
 

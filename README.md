@@ -1,39 +1,77 @@
-📅 Date Calculator App
+# 📅 Date Calculator App
 
-A modern web application for date calculations and management, built with React and Tailwind CSS.
+> A modern web application for date calculations and management.  
+> Built with React and Tailwind CSS.
 
-🔗 View Live App Here
+---
 
-✨ Features
+## 🚀 Live Demo
 
-The application offers 4 main tools:
+🔗 **Live App:**  
+https://gpap223.github.io/Date_Calculator/
 
-🕒 Duration Conversion: Convert a total number of days into years, months, and days (e.g., 400 days → 1 year, 1 month, 5 days).
+---
 
-➕➖ Date Operations: Add or subtract years, months, or days from a specific date.
+## 📸 Preview
 
-↔️ Date Difference: Calculate exactly how much time passes between two dates.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/GPap223/Date_Calculator/main/screenshot.png" width="800"/>
+</p>
 
-📅 Day Finder: Find out which day of the week (e.g., Monday, Saturday) a specific date falls on.
+---
 
-🛠️ Technologies Used
+## ✨ Features
 
-HTML5 (Single File Component)
+### 🕒 Duration Conversion
+Convert a total number of days into years, months, and days.  
+Example: `400 days → 1 year, 1 month, 5 days`
 
-React.js (via CDN for easy execution)
+### ➕ Date Operations
+Add or subtract years, months, or days from a specific date.
 
-Tailwind CSS (for styling)
+### 📆 Date Difference
+Calculate exactly how much time passes between two dates.
 
-Lucide React (for icons)
+### 📅 Day Finder
+Find which day of the week (Monday, Saturday, etc.) a specific date falls on.
 
-🚀 How to Run Locally
+---
 
-Since the app is Self-Contained (all in one file), no installation is needed!
+## 🛠 Tech Stack
 
-Download the index.html file from this repository.
+- **HTML5** (Single File Component)
+- **React (via CDN)**
+- **Tailwind CSS**
+- **Lucide Icons**
 
-Open it with any web browser (Chrome, Edge, Firefox).
+---
 
-That's it!
+## 📦 Installation
 
-Created by GPap223
+No installation required.
+
+1. Download the `index.html` file  
+2. Open it in any browser (Chrome, Edge, Firefox)
+
+That’s it ✅
+
+---
+
+## 🎯 Project Goals
+
+- Practice date manipulation logic
+- Improve UI design with Tailwind CSS
+- Build a fully self-contained React app
+
+---
+
+## 👨‍💻 Author
+
+Created by **GPap223**
+
+---
+
+## 📄 License
+
+This project is open-source and available under the MIT License.
+

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ημερολόγιο App</title>
+    
+    <!-- 1. Φέρνουμε το Tailwind CSS για την εμφάνιση -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Φέρνουμε το React και το ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 3. Φέρνουμε το Babel για να καταλαβαίνει ο browser τον κώδικα React -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Google Fonts για ομορφιά -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-100 to-purple-100 min-h-screen">
+
+    <!-- Εδώ θα εμφανιστεί η εφαρμογή -->
+    <div id="root"></div>
+
+    <!-- Ο Κώδικας της Εφαρμογής -->
+    <script type="text/babel">
+        const { useState } = React;
+
+        // --- Εικονίδια (SVG) απευθείας στον κώδικα για να μην χρειάζονται εξωτερικές βιβλιοθήκες ---
+        const Icons = {
+            Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
+            Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            Calculator: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
+            ArrowRightLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>,
+            RotateCcw: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
+            MoveRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8L22 12L18 16"/><path d="M2 12H22"/></svg>
+        };
+
+        const formatDate = (date) => {
+            if (!date) return '';
+            return new Date(date).toLocaleDateString('el-GR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        };
+
+        // --- Components ---
+
+        const NormalizeTab = ({ onResult }) => {
+            const [inputs, setInputs] = useState({ years: 0, months: 0, days: 0 });
+            const [result, setResult] = useState(null);
+
+            const calculate = () => {
+                let { years, months, days } = inputs;
+                if (days >= 30) {
+                    months += Math.floor(days / 30);
+                    days = days % 30;
+                }
+                if (months > 12) {
+                    years += Math.floor(months / 12);
+                    months = months % 12;
+                }
+                const resString = `${years} έτη, ${months} μήνες, ${days} ημέρες`;
+                setResult({ years, months, days });
+                onResult('Μετατροπή', resString);
+            };
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <h2 className="text-xl font-bold text-gray-800">Μετατροπή Διάρκειας</h2>
+                    <p className="text-sm text-gray-500">Εισάγετε διάρκεια για κανονικοποίηση (π.χ. 40 μέρες &rarr; 1 μήνας & 10 μέρες).</p>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                        {['years', 'months', 'days'].map((field) => (
+                        <div key={field}>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
+                            {field === 'years' ? 'Έτη' : field === 'months' ? 'Μήνες' : 'Ημέρες'}
+                            </label>
+                            <input
+                            type="number"
+                            min="0"
+                            value={inputs[field]}
+                            onChange={(e) => setInputs({ ...inputs, [field]: parseInt(e.target.value) || 0 })}
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                            />
+                        </div>
+                        ))}
+                    </div>
+
+                    <button onClick={calculate} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all active:scale-95">
+                        Υπολογισμός
+                    </button>
+
+                    {result && (
+                        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                        <span className="text-sm text-green-600 font-semibold uppercase tracking-wide">Αποτέλεσμα</span>
+                        <p className="text-2xl font-bold text-green-800 mt-1">
+                            {result.years} έτη, {result.months} μήνες, {result.days} ημέρες
+                        </p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const CalcTab = ({ onResult }) => {
+            const [date, setDate] = useState('');
+            const [operation, setOperation] = useState('add');
+            const [duration, setDuration] = useState({ years: 0, months: 0, days: 0 });
+            const [resultDate, setResultDate] = useState(null);
+
+            const calculate = () => {
+                if (!date) return;
+                const d = new Date(date);
+                const multiplier = operation === 'add' ? 1 : -1;
+                d.setFullYear(d.getFullYear() + (duration.years * multiplier));
+                d.setMonth(d.getMonth() + (duration.months * multiplier));
+                d.setDate(d.getDate() + (duration.days * multiplier));
+                setResultDate(d);
+                onResult(operation === 'add' ? 'Πρόσθεση' : 'Αφαίρεση', formatDate(d));
+            };
+
+            return (
+                <div className="space-y-6">
+                    <h2 className="text-xl font-bold text-gray-800">Πρόσθεση / Αφαίρεση</h2>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Αρχική Ημερομηνία</label>
+                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+                    </div>
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        <button onClick={() => setOperation('add')} className={`flex-1 py-1 rounded-md text-sm font-medium transition-all ${operation === 'add' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}>Πρόσθεση (+)</button>
+                        <button onClick={() => setOperation('sub')} className={`flex-1 py-1 rounded-md text-sm font-medium transition-all ${operation === 'sub' ? 'bg-white shadow text-red-600' : 'text-gray-500'}`}>Αφαίρεση (-)</button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        {['years', 'months', 'days'].map((field) => (
+                        <div key={field}>
+                            <label className="block text-xs text-gray-500 mb-1 capitalize">{field === 'years' ? 'Έτη' : field === 'months' ? 'Μήνες' : 'Ημέρες'}</label>
+                            <input type="number" min="0" placeholder="0" value={duration[field]} onChange={(e) => setDuration({ ...duration, [field]: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+                        </div>
+                        ))}
+                    </div>
+                    <button onClick={calculate} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all active:scale-95">Υπολογισμός</button>
+                    {resultDate && (
+                        <div className="mt-4 text-center">
+                            <p className="text-gray-500 text-sm">Νέα Ημερομηνία</p>
+                            <p className="text-3xl font-bold text-indigo-700">{formatDate(resultDate)}</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const DiffTab = ({ onResult }) => {
+            const [date1, setDate1] = useState('');
+            const [date2, setDate2] = useState('');
+            const [diff, setDiff] = useState(null);
+
+            const calculate = () => {
+                if (!date1 || !date2) return;
+                const d1 = new Date(date1);
+                const d2 = new Date(date2);
+                const start = d1 < d2 ? d1 : d2;
+                const end = d1 < d2 ? d2 : d1;
+                
+                let years = end.getFullYear() - start.getFullYear();
+                let months = end.getMonth() - start.getMonth();
+                let days = end.getDate() - start.getDate();
+
+                if (days < 0) {
+                    months--;
+                    const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+                    days += prevMonth;
+                }
+                if (months < 0) {
+                    years--;
+                    months += 12;
+                }
+                const resString = `${years} έτη, ${months} μήνες, ${days} ημέρες`;
+                setDiff({ years, months, days });
+                onResult('Διαφορά', resString);
+            };
+
+            return (
+                <div className="space-y-6">
+                    <h2 className="text-xl font-bold text-gray-800">Διαφορά Ημερομηνιών</h2>
+                    <div className="flex flex-col sm:flex-row gap-4 items-center">
+                        <div className="w-full">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Ημερομηνία 1</label>
+                            <input type="date" value={date1} onChange={(e) => setDate1(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+                        </div>
+                        <div className="hidden sm:block text-gray-400 mt-6"><Icons.MoveRight className="w-6 h-6"/></div>
+                        <div className="w-full">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Ημερομηνία 2</label>
+                            <input type="date" value={date2} onChange={(e) => setDate2(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+                        </div>
+                    </div>
+                    <button onClick={calculate} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all active:scale-95">Υπολογισμός Διαφοράς</button>
+                    {diff && (
+                        <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg text-center">
+                            <span className="text-sm text-orange-600 font-semibold uppercase tracking-wide">Χρονική Απόσταση</span>
+                            <p className="text-2xl font-bold text-orange-800 mt-1">{diff.years} έτη, {diff.months} μήνες, {diff.days} ημέρες</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const WeekdayTab = ({ onResult }) => {
+            const [date, setDate] = useState('');
+            const [dayName, setDayName] = useState('');
+
+            const calculate = () => {
+                if (!date) return;
+                const d = new Date(date);
+                const name = d.toLocaleDateString('el-GR', { weekday: 'long' });
+                const finalName = name.charAt(0).toUpperCase() + name.slice(1);
+                setDayName(finalName);
+                onResult('Εύρεση Ημέρας', `${formatDate(d)} είναι ${finalName}`);
+            };
+
+            return (
+                <div className="space-y-6">
+                    <h2 className="text-xl font-bold text-gray-800">Ποια μέρα πέφτει;</h2>
+                    <p className="text-sm text-gray-500">Μάθε αν μια ημερομηνία είναι Δευτέρα, Τρίτη κ.λπ.</p>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Ημερομηνία</label>
+                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+                    </div>
+                    <button onClick={calculate} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all active:scale-95">Βρες την Ημέρα</button>
+                    {dayName && (
+                        <div className="mt-6 text-center">
+                            <p className="text-gray-500 mb-2">Η ημερομηνία πέφτει:</p>
+                            <div className="inline-block px-8 py-4 bg-indigo-600 text-white text-3xl font-bold rounded-xl shadow-lg transform rotate-[-2deg]">{dayName}</div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('normalize');
+            const [history, setHistory] = useState([]);
+
+            const addToHistory = (action, result) => {
+                setHistory(prev => [{ action, result, id: Date.now() }, ...prev].slice(0, 10));
+            };
+
+            const tabs = [
+                { id: 'normalize', icon: Icons.Clock, label: 'Μετατροπή' },
+                { id: 'calc', icon: Icons.Calculator, label: 'Πράξεις' },
+                { id: 'diff', icon: Icons.ArrowRightLeft, label: 'Διαφορά' },
+                { id: 'weekday', icon: Icons.Calendar, label: 'Ημέρα' },
+            ];
+
+            return (
+                <div className="max-w-2xl mx-auto my-10 bg-white rounded-2xl shadow-xl overflow-hidden">
+                    <header className="bg-indigo-600 p-6 text-white text-center">
+                        <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
+                            <Icons.Calendar /> Ημερολόγιο App
+                        </h1>
+                        <p className="text-indigo-100 opacity-90">Εργαλείο διαχείρισης ημερομηνιών</p>
+                    </header>
+
+                    <div className="flex flex-wrap border-b border-gray-200">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex-1 py-4 px-2 text-sm sm:text-base font-medium flex items-center justify-center gap-2 transition-colors
+                                    ${activeTab === tab.id 
+                                    ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' 
+                                    : 'text-gray-500 hover:text-indigo-500 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <tab.icon />
+                                <span className="hidden sm:inline">{tab.label}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="p-6 min-h-[400px]">
+                        {activeTab === 'normalize' && <NormalizeTab onResult={addToHistory} />}
+                        {activeTab === 'calc' && <CalcTab onResult={addToHistory} />}
+                        {activeTab === 'diff' && <DiffTab onResult={addToHistory} />}
+                        {activeTab === 'weekday' && <WeekdayTab onResult={addToHistory} />}
+                    </div>
+
+                    {history.length > 0 && (
+                        <div className="bg-gray-50 p-6 border-t border-gray-200">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-semibold text-gray-700 flex items-center gap-2"><Icons.RotateCcw /> Ιστορικό</h3>
+                                <button onClick={() => setHistory([])} className="text-xs text-red-500 hover:underline">Καθαρισμός</button>
+                            </div>
+                            <ul className="space-y-2">
+                                {history.map((item) => (
+                                    <li key={item.id} className="text-sm bg-white p-2 rounded border border-gray-200 shadow-sm flex justify-between">
+                                        <span className="font-medium text-indigo-600">{item.action}:</span>
+                                        <span className="text-gray-600">{item.result}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

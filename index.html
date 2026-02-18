@@ -2,310 +2,620 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ημερολόγιο App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Date Calculator Professional</title>
     
-    <!-- 1. Φέρνουμε το Tailwind CSS για την εμφάνιση -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. Φέρνουμε το React και το ReactDOM -->
+    <!-- React & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- 3. Φέρνουμε το Babel για να καταλαβαίνει ο browser τον κώδικα React -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Google Fonts για ομορφιά -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Enable class-based dark mode
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                    },
+                    colors: {
+                        corp: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7', // Professional Blue
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e', // Navy
+                        },
+                        dark: {
+                            bg: '#0f172a', // Slate 900
+                            card: '#1e293b', // Slate 800
+                            border: '#334155', // Slate 700
+                            text: '#f8fafc', // Slate 50
+                        }
+                    },
+                    boxShadow: {
+                        'pro': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        'floating': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    },
+                    animation: {
+                        'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    },
+                    keyframes: {
+                        popIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.9) translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            /* Default Light Mode Styles handled by Tailwind classes on body in React */
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Clean Header Background */
+        .header-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        
+        /* Professional Input Focus */
+        .pro-input {
+            transition: all 0.2s ease-in-out;
+        }
+        .pro-input:focus {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+        }
+
+        /* Chat Scrollbar */
+        .chat-scroll::-webkit-scrollbar { width: 4px; }
+        .chat-scroll::-webkit-scrollbar-track { background: transparent; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        /* Dark Mode Input adjustments */
+        .dark input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.6;
+            cursor: pointer;
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-indigo-100 to-purple-100 min-h-screen">
+<body>
 
-    <!-- Εδώ θα εμφανιστεί η εφαρμογή -->
     <div id="root"></div>
 
-    <!-- Ο Κώδικας της Εφαρμογής -->
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect, useRef } = React;
 
-        // --- Εικονίδια (SVG) απευθείας στον κώδικα για να μην χρειάζονται εξωτερικές βιβλιοθήκες ---
-        const Icons = {
-            Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
-            Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-            Calculator: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
-            ArrowRightLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>,
-            RotateCcw: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
-            MoveRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8L22 12L18 16"/><path d="M2 12H22"/></svg>
+        // --- Translations ---
+        const resources = {
+            el: {
+                title: "Date Calculator",
+                subtitle: "Professional Edition",
+                menu: { normalize: "Μετατροπή", calc: "Πράξεις", diff: "Διαφορά", weekday: "Ημέρα" },
+                normalize: { 
+                    years: "Έτη", months: "Μήνες", days: "Ημέρες", 
+                    btn: "Εκτέλεση Υπολογισμού", 
+                    resTitle: "Μετατροπή Διάρκειας", 
+                    resText: (y,m,d) => `${y} έτη, ${m} μήνες, ${d} μέρες` 
+                },
+                calc: { 
+                    baseDate: "Ημερομηνία Βάσης", 
+                    add: "Πρόσθεση", sub: "Αφαίρεση", 
+                    btn: "Ενημέρωση", 
+                    resAdd: "Νέα Ημερομηνία", resSub: "Προηγούμενη Ημερομηνία" 
+                },
+                diff: { 
+                    from: "Από", to: "Έως", 
+                    btn: "Υπολογισμός Διαφοράς", 
+                    resTitle: "Χρονική Διαφορά", 
+                    resText: (y,m,d) => `${y} έτη, ${m} μήνες, ${d} μέρες`,
+                    businessDays: "Μόνο Εργάσιμες (Δευ-Παρ)",
+                    resBusiness: (days) => `${days} εργάσιμες ημέρες`
+                },
+                weekday: { 
+                    label: "Επιλέξτε Ημερομηνία", 
+                    btn: "Εύρεση Ημέρας", 
+                    resTitle: "Αποτέλεσμα", 
+                    is: "είναι",
+                    week: "Εβδομάδα"
+                },
+                history: { title: "Ιστορικό Ενεργειών", clear: "Καθαρισμός" },
+                footer: "Creator",
+                chat: {
+                    title: "Βοηθός",
+                    intro: "Γεια σας! Πώς μπορώ να βοηθήσω;",
+                    questions: [
+                        { q: "Πώς λειτουργεί η Μετατροπή;", a: "Μετατρέπει τις συνολικές μέρες σε Έτη/Μήνες/Ημέρες θεωρώντας ότι 1 μήνας = 30 μέρες για απλοποίηση." },
+                        { q: "Είναι ακριβείς οι Πράξεις;", a: "Ναι, η καρτέλα 'Πράξεις' χρησιμοποιεί το πραγματικό ημερολόγιο και υπολογίζει δίσεκτα έτη και μέρες μήνα." },
+                        { q: "Τι είναι οι Εργάσιμες;", a: "Υπολογίζει τη διαφορά ημερών εξαιρώντας τα Σαββατοκύριακα." },
+                        { q: "Ποιος έφτιαξε την εφαρμογή;", a: "Ο Γιώργος Παπατσίμπας, το έτος 2026." }
+                    ]
+                },
+                copy: "Αντιγραφή"
+            },
+            en: {
+                title: "Date Calculator",
+                subtitle: "Professional Edition",
+                menu: { normalize: "Normalize", calc: "Calculator", diff: "Difference", weekday: "Weekday" },
+                normalize: { 
+                    years: "Years", months: "Months", days: "Days", 
+                    btn: "Calculate Duration", 
+                    resTitle: "Duration Conversion", 
+                    resText: (y,m,d) => `${y} years, ${m} months, ${d} days` 
+                },
+                calc: { 
+                    baseDate: "Base Date", 
+                    add: "Add", sub: "Subtract", 
+                    btn: "Update Date", 
+                    resAdd: "New Date", resSub: "Previous Date" 
+                },
+                diff: { 
+                    from: "From", to: "To", 
+                    btn: "Calculate Difference", 
+                    resTitle: "Time Difference", 
+                    resText: (y,m,d) => `${y} years, ${m} months, ${d} days`,
+                    businessDays: "Business Days Only (Mon-Fri)",
+                    resBusiness: (days) => `${days} business days`
+                },
+                weekday: { 
+                    label: "Select Date", 
+                    btn: "Find Day", 
+                    resTitle: "Result", 
+                    is: "is",
+                    week: "Week"
+                },
+                history: { title: "Action History", clear: "Clear Log" },
+                footer: "Creator",
+                chat: {
+                    title: "Support Bot",
+                    intro: "Hello! How can I help you today?",
+                    questions: [
+                        { q: "How does Normalize work?", a: "It converts total days into Years/Months/Days assuming 1 month = 30 days for simplification." },
+                        { q: "Is the Calculator accurate?", a: "Yes, the 'Calculator' tab uses real calendar data, accounting for leap years and specific month lengths." },
+                        { q: "What are Business Days?", a: "Calculates the difference in days excluding weekends (Saturday & Sunday)." },
+                        { q: "Who created this?", a: "Giorgos Papatsimpas, in the year 2026." }
+                    ]
+                },
+                copy: "Copy"
+            }
         };
 
-        const formatDate = (date) => {
+        // --- Icons (Clean & Sharp) ---
+        const Icons = {
+            Time: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6l4 2"/></svg>,
+            Calc: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14h.01M12 17h.01M16 17h.01M8 17h.01M8 14h.01M16 14h.01M12 11h.01M16 11h.01M8 11h.01M12 7v1"/></svg>,
+            Diff: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>,
+            Calendar: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 2v4M8 2v4M3 10h18"/></svg>,
+            Trash: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>,
+            Check: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>,
+            Globe: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+            Chat: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>,
+            Close: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>,
+            Bot: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+            Copy: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>,
+            Sun: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+            Moon: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+        };
+
+        const formatDate = (date, lang) => {
             if (!date) return '';
-            return new Date(date).toLocaleDateString('el-GR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
+            const locale = lang === 'el' ? 'el-GR' : 'en-US';
+            return new Date(date).toLocaleDateString(locale, {
+                day: '2-digit', month: '2-digit', year: 'numeric'
             });
         };
 
-        // --- Components ---
+        function getISOWeek(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+        }
 
-        const NormalizeTab = ({ onResult }) => {
+        function calcBusinessDays(d1, d2) {
+            let start = new Date(d1);
+            let end = new Date(d2);
+            if (start > end) [start, end] = [end, start]; 
+            let count = 0;
+            let cur = new Date(start);
+            while (cur < end) {
+                cur.setDate(cur.getDate() + 1);
+                const day = cur.getDay();
+                if (day !== 0 && day !== 6) count++;
+            }
+            return count;
+        }
+
+        // --- Corporate Components ---
+
+        const CorpButton = ({ children, onClick, variant = 'primary' }) => {
+            const base = "w-full py-3.5 px-4 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm touch-manipulation";
+            const variants = {
+                primary: "bg-corp-900 text-white hover:bg-corp-800 active:bg-corp-900 dark:bg-corp-600 dark:hover:bg-corp-500",
+                secondary: "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 dark:bg-dark-card dark:text-dark-text dark:border-dark-border dark:hover:bg-slate-700",
+                accent: "bg-corp-600 text-white hover:bg-corp-500 active:bg-corp-700"
+            };
+            return (
+                <button onClick={onClick} className={`${base} ${variants[variant]}`}>
+                    {children}
+                </button>
+            );
+        };
+
+        const CorpInput = ({ label, type = "text", value, onChange }) => (
+            <div className="w-full">
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">{label}</label>
+                <input 
+                    type={type} 
+                    value={value} 
+                    onChange={onChange}
+                    className="pro-input w-full bg-white dark:bg-dark-bg border border-slate-300 dark:border-dark-border rounded-lg px-3 py-3 text-slate-900 dark:text-white text-sm outline-none placeholder-slate-400"
+                />
+            </div>
+        );
+
+        const ResultBox = ({ label, value, t }) => {
+            const copyToClipboard = () => {
+                navigator.clipboard.writeText(value);
+            };
+
+            return (
+                <div className="mt-8 bg-corp-50 dark:bg-slate-800 border-l-4 border-corp-600 p-5 rounded-r-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in">
+                    <div>
+                        <span className="text-xs font-bold text-corp-800 dark:text-corp-500 uppercase tracking-wider mb-1 block">{label}</span>
+                        <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white break-words">{value}</p>
+                    </div>
+                    <button onClick={copyToClipboard} className="text-corp-600 dark:text-corp-400 hover:text-corp-800 dark:hover:text-white p-2 rounded hover:bg-white/50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1 text-xs font-bold uppercase whitespace-nowrap" title="Copy">
+                        <Icons.Copy /> {t}
+                    </button>
+                </div>
+            );
+        };
+
+        // --- ChatBot Component ---
+        const ChatBot = ({ lang }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [messages, setMessages] = useState([]);
+            const [isTyping, setIsTyping] = useState(false);
+            const scrollRef = useRef(null);
+            
+            const t = resources[lang].chat;
+
+            useEffect(() => {
+                setMessages([{ text: t.intro, sender: 'bot', id: 0 }]);
+            }, [lang]);
+
+            useEffect(() => {
+                if (scrollRef.current) {
+                    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                }
+            }, [messages, isTyping]);
+
+            const handleAsk = (qa) => {
+                setMessages(prev => [...prev, { text: qa.q, sender: 'user', id: Date.now() }]);
+                setIsTyping(true);
+                setTimeout(() => {
+                    setMessages(prev => [...prev, { text: qa.a, sender: 'bot', id: Date.now() + 1 }]);
+                    setIsTyping(false);
+                }, 800);
+            };
+
+            return (
+                <div className="fixed bottom-6 left-6 z-50 flex flex-col items-start gap-4 font-sans">
+                    {isOpen && (
+                        <div className="bg-white dark:bg-dark-card rounded-xl shadow-2xl border border-slate-200 dark:border-dark-border w-80 max-w-[calc(100vw-3rem)] h-96 flex flex-col overflow-hidden animate-pop-in origin-bottom-left">
+                            <div className="bg-corp-900 text-white p-4 flex justify-between items-center shadow-md">
+                                <div className="flex items-center gap-2">
+                                    <div className="bg-white/20 p-1.5 rounded-full"><Icons.Bot /></div>
+                                    <span className="font-bold text-sm tracking-wide">{t.title}</span>
+                                </div>
+                                <button onClick={() => setIsOpen(false)} className="text-white/70 hover:text-white p-1">
+                                    <Icons.Close />
+                                </button>
+                            </div>
+                            <div className="flex-1 bg-slate-50 dark:bg-dark-bg p-4 overflow-y-auto chat-scroll space-y-3" ref={scrollRef}>
+                                {messages.map((msg) => (
+                                    <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[85%] px-3 py-2 rounded-lg text-xs leading-5 shadow-sm ${
+                                            msg.sender === 'user' ? 'bg-corp-600 text-white rounded-br-none' : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-bl-none'
+                                        }`}>{msg.text}</div>
+                                    </div>
+                                ))}
+                                {isTyping && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-2 rounded-lg rounded-bl-none shadow-sm flex gap-1">
+                                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
+                                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="bg-white dark:bg-dark-card p-2 border-t border-slate-200 dark:border-dark-border">
+                                <div className="flex flex-col gap-1 max-h-32 overflow-y-auto chat-scroll pr-1">
+                                    {t.questions.map((qa, i) => (
+                                        <button key={i} onClick={() => !isTyping && handleAsk(qa)} disabled={isTyping} className="text-left px-3 py-2 text-xs font-medium text-corp-700 dark:text-slate-300 hover:bg-corp-50 dark:hover:bg-slate-700 rounded-md transition-colors border border-transparent hover:border-corp-100 dark:hover:border-slate-600 truncate w-full disabled:opacity-50">
+                                            {qa.q}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <button onClick={() => setIsOpen(!isOpen)} className={`w-14 h-14 rounded-full shadow-floating flex items-center justify-center text-white transition-all transform hover:scale-105 active:scale-95 ${isOpen ? 'bg-slate-700 dark:bg-slate-600 rotate-90' : 'bg-corp-600 hover:bg-corp-500'}`}>
+                        {isOpen ? <Icons.Close /> : <Icons.Chat />}
+                    </button>
+                </div>
+            );
+        };
+
+        // --- Logic ---
+
+        const NormalizeTab = ({ onResult, t }) => {
             const [inputs, setInputs] = useState({ years: 0, months: 0, days: 0 });
-            const [result, setResult] = useState(null);
-
             const calculate = () => {
                 let { years, months, days } = inputs;
-                if (days >= 30) {
-                    months += Math.floor(days / 30);
-                    days = days % 30;
-                }
-                if (months > 12) {
-                    years += Math.floor(months / 12);
-                    months = months % 12;
-                }
-                const resString = `${years} έτη, ${months} μήνες, ${days} ημέρες`;
-                setResult({ years, months, days });
-                onResult('Μετατροπή', resString);
+                if (days >= 30) { months += Math.floor(days / 30); days = days % 30; }
+                if (months > 12) { years += Math.floor(months / 12); months = months % 12; }
+                onResult(t.resTitle, t.resText(years, months, days));
+            };
+            return (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <CorpInput label={t.years} type="number" value={inputs.years} onChange={(e) => setInputs({ ...inputs, years: parseInt(e.target.value) || 0 })} />
+                        <CorpInput label={t.months} type="number" value={inputs.months} onChange={(e) => setInputs({ ...inputs, months: parseInt(e.target.value) || 0 })} />
+                        <CorpInput label={t.days} type="number" value={inputs.days} onChange={(e) => setInputs({ ...inputs, days: parseInt(e.target.value) || 0 })} />
+                    </div>
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+                        <CorpButton onClick={calculate} variant="accent">{t.btn}</CorpButton>
+                    </div>
+                </div>
+            );
+        };
+
+        const CalcTab = ({ onResult, t, lang }) => {
+            const [date, setDate] = useState('');
+            const [op, setOp] = useState('add');
+            const [dur, setDur] = useState({ years: 0, months: 0, days: 0 });
+
+            const calculate = () => {
+                if (!date) return;
+                const d = new Date(date);
+                const mult = op === 'add' ? 1 : -1;
+                d.setFullYear(d.getFullYear() + (dur.years * mult));
+                d.setMonth(d.getMonth() + (dur.months * mult));
+                d.setDate(d.getDate() + (dur.days * mult));
+                onResult(op === 'add' ? t.resAdd : t.resSub, formatDate(d, lang));
             };
 
             return (
-                <div className="space-y-6 animate-fade-in">
-                    <h2 className="text-xl font-bold text-gray-800">Μετατροπή Διάρκειας</h2>
-                    <p className="text-sm text-gray-500">Εισάγετε διάρκεια για κανονικοποίηση (π.χ. 40 μέρες &rarr; 1 μήνας & 10 μέρες).</p>
+                <div className="space-y-6">
+                    <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <CorpInput label={t.baseDate} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                    </div>
                     
-                    <div className="grid grid-cols-3 gap-4">
-                        {['years', 'months', 'days'].map((field) => (
-                        <div key={field}>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
-                            {field === 'years' ? 'Έτη' : field === 'months' ? 'Μήνες' : 'Ημέρες'}
-                            </label>
-                            <input
-                            type="number"
-                            min="0"
-                            value={inputs[field]}
-                            onChange={(e) => setInputs({ ...inputs, [field]: parseInt(e.target.value) || 0 })}
-                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
-                            />
-                        </div>
-                        ))}
+                    <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer p-3 border dark:border-slate-700 rounded-lg flex-1 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                            <input type="radio" name="op" checked={op === 'add'} onChange={() => setOp('add')} className="accent-corp-600 w-4 h-4" />
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t.add}</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer p-3 border dark:border-slate-700 rounded-lg flex-1 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                            <input type="radio" name="op" checked={op === 'sub'} onChange={() => setOp('sub')} className="accent-corp-600 w-4 h-4" />
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t.sub}</span>
+                        </label>
                     </div>
 
-                    <button onClick={calculate} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all active:scale-95">
-                        Υπολογισμός
-                    </button>
-
-                    {result && (
-                        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-                        <span className="text-sm text-green-600 font-semibold uppercase tracking-wide">Αποτέλεσμα</span>
-                        <p className="text-2xl font-bold text-green-800 mt-1">
-                            {result.years} έτη, {result.months} μήνες, {result.days} ημέρες
-                        </p>
-                        </div>
-                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <CorpInput label={resources.el.normalize.years} type="number" value={dur.years} onChange={(e) => setDur({ ...dur, years: parseInt(e.target.value) || 0 })} />
+                        <CorpInput label={resources.el.normalize.months} type="number" value={dur.months} onChange={(e) => setDur({ ...dur, months: parseInt(e.target.value) || 0 })} />
+                        <CorpInput label={resources.el.normalize.days} type="number" value={dur.days} onChange={(e) => setDur({ ...dur, days: parseInt(e.target.value) || 0 })} />
+                    </div>
+                    <CorpButton onClick={calculate} variant="accent">{t.btn}</CorpButton>
                 </div>
             );
         };
 
-        const CalcTab = ({ onResult }) => {
-            const [date, setDate] = useState('');
-            const [operation, setOperation] = useState('add');
-            const [duration, setDuration] = useState({ years: 0, months: 0, days: 0 });
-            const [resultDate, setResultDate] = useState(null);
+        const DiffTab = ({ onResult, t }) => {
+            const [d1, setD1] = useState('');
+            const [d2, setD2] = useState('');
+            const [isBusiness, setIsBusiness] = useState(false);
 
             const calculate = () => {
-                if (!date) return;
-                const d = new Date(date);
-                const multiplier = operation === 'add' ? 1 : -1;
-                d.setFullYear(d.getFullYear() + (duration.years * multiplier));
-                d.setMonth(d.getMonth() + (duration.months * multiplier));
-                d.setDate(d.getDate() + (duration.days * multiplier));
-                setResultDate(d);
-                onResult(operation === 'add' ? 'Πρόσθεση' : 'Αφαίρεση', formatDate(d));
-            };
-
-            return (
-                <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-gray-800">Πρόσθεση / Αφαίρεση</h2>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Αρχική Ημερομηνία</label>
-                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
-                    </div>
-                    <div className="flex bg-gray-100 p-1 rounded-lg">
-                        <button onClick={() => setOperation('add')} className={`flex-1 py-1 rounded-md text-sm font-medium transition-all ${operation === 'add' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}>Πρόσθεση (+)</button>
-                        <button onClick={() => setOperation('sub')} className={`flex-1 py-1 rounded-md text-sm font-medium transition-all ${operation === 'sub' ? 'bg-white shadow text-red-600' : 'text-gray-500'}`}>Αφαίρεση (-)</button>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                        {['years', 'months', 'days'].map((field) => (
-                        <div key={field}>
-                            <label className="block text-xs text-gray-500 mb-1 capitalize">{field === 'years' ? 'Έτη' : field === 'months' ? 'Μήνες' : 'Ημέρες'}</label>
-                            <input type="number" min="0" placeholder="0" value={duration[field]} onChange={(e) => setDuration({ ...duration, [field]: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
-                        </div>
-                        ))}
-                    </div>
-                    <button onClick={calculate} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all active:scale-95">Υπολογισμός</button>
-                    {resultDate && (
-                        <div className="mt-4 text-center">
-                            <p className="text-gray-500 text-sm">Νέα Ημερομηνία</p>
-                            <p className="text-3xl font-bold text-indigo-700">{formatDate(resultDate)}</p>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        const DiffTab = ({ onResult }) => {
-            const [date1, setDate1] = useState('');
-            const [date2, setDate2] = useState('');
-            const [diff, setDiff] = useState(null);
-
-            const calculate = () => {
-                if (!date1 || !date2) return;
-                const d1 = new Date(date1);
-                const d2 = new Date(date2);
-                const start = d1 < d2 ? d1 : d2;
-                const end = d1 < d2 ? d2 : d1;
+                if (!d1 || !d2) return;
                 
-                let years = end.getFullYear() - start.getFullYear();
-                let months = end.getMonth() - start.getMonth();
-                let days = end.getDate() - start.getDate();
-
-                if (days < 0) {
-                    months--;
-                    const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0).getDate();
-                    days += prevMonth;
+                if (isBusiness) {
+                    const days = calcBusinessDays(d1, d2);
+                    onResult(t.resTitle, t.resBusiness(days));
+                } else {
+                    const start = new Date(d1 < d2 ? d1 : d2);
+                    const end = new Date(d1 < d2 ? d2 : d1);
+                    let y = end.getFullYear() - start.getFullYear();
+                    let m = end.getMonth() - start.getMonth();
+                    let d = end.getDate() - start.getDate();
+                    if (d < 0) { m--; d += new Date(end.getFullYear(), end.getMonth(), 0).getDate(); }
+                    if (m < 0) { y--; m += 12; }
+                    onResult(t.resTitle, t.resText(y, m, d));
                 }
-                if (months < 0) {
-                    years--;
-                    months += 12;
-                }
-                const resString = `${years} έτη, ${months} μήνες, ${days} ημέρες`;
-                setDiff({ years, months, days });
-                onResult('Διαφορά', resString);
             };
-
             return (
                 <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-gray-800">Διαφορά Ημερομηνιών</h2>
-                    <div className="flex flex-col sm:flex-row gap-4 items-center">
-                        <div className="w-full">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Ημερομηνία 1</label>
-                            <input type="date" value={date1} onChange={(e) => setDate1(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
-                        </div>
-                        <div className="hidden sm:block text-gray-400 mt-6"><Icons.MoveRight className="w-6 h-6"/></div>
-                        <div className="w-full">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Ημερομηνία 2</label>
-                            <input type="date" value={date2} onChange={(e) => setDate2(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
-                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
+                        <CorpInput label={t.from} type="date" value={d1} onChange={(e) => setD1(e.target.value)} />
+                        <div className="hidden sm:block text-center pb-3 text-slate-400">→</div>
+                        <div className="sm:hidden text-center text-slate-400">↓</div>
+                        <CorpInput label={t.to} type="date" value={d2} onChange={(e) => setD2(e.target.value)} />
                     </div>
-                    <button onClick={calculate} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all active:scale-95">Υπολογισμός Διαφοράς</button>
-                    {diff && (
-                        <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg text-center">
-                            <span className="text-sm text-orange-600 font-semibold uppercase tracking-wide">Χρονική Απόσταση</span>
-                            <p className="text-2xl font-bold text-orange-800 mt-1">{diff.years} έτη, {diff.months} μήνες, {diff.days} ημέρες</p>
-                        </div>
-                    )}
+                    
+                    <div className="flex items-center gap-2 py-2">
+                        <input type="checkbox" id="biz" checked={isBusiness} onChange={(e) => setIsBusiness(e.target.checked)} className="w-4 h-4 rounded text-corp-600 focus:ring-corp-500" />
+                        <label htmlFor="biz" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none">{t.businessDays}</label>
+                    </div>
+
+                    <CorpButton onClick={calculate} variant="accent">{t.btn}</CorpButton>
                 </div>
             );
         };
 
-        const WeekdayTab = ({ onResult }) => {
+        const WeekdayTab = ({ onResult, t, lang }) => {
             const [date, setDate] = useState('');
-            const [dayName, setDayName] = useState('');
-
             const calculate = () => {
                 if (!date) return;
                 const d = new Date(date);
-                const name = d.toLocaleDateString('el-GR', { weekday: 'long' });
-                const finalName = name.charAt(0).toUpperCase() + name.slice(1);
-                setDayName(finalName);
-                onResult('Εύρεση Ημέρας', `${formatDate(d)} είναι ${finalName}`);
+                const locale = lang === 'el' ? 'el-GR' : 'en-US';
+                const name = d.toLocaleDateString(locale, { weekday: 'long' });
+                const weekNum = getISOWeek(d);
+                onResult(t.resTitle, `${formatDate(d, lang)} ${t.is} ${name.toUpperCase()} (${t.week} ${weekNum})`);
             };
-
             return (
                 <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-gray-800">Ποια μέρα πέφτει;</h2>
-                    <p className="text-sm text-gray-500">Μάθε αν μια ημερομηνία είναι Δευτέρα, Τρίτη κ.λπ.</p>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Ημερομηνία</label>
-                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
-                    </div>
-                    <button onClick={calculate} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all active:scale-95">Βρες την Ημέρα</button>
-                    {dayName && (
-                        <div className="mt-6 text-center">
-                            <p className="text-gray-500 mb-2">Η ημερομηνία πέφτει:</p>
-                            <div className="inline-block px-8 py-4 bg-indigo-600 text-white text-3xl font-bold rounded-xl shadow-lg transform rotate-[-2deg]">{dayName}</div>
-                        </div>
-                    )}
+                    <CorpInput label={t.label} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                    <CorpButton onClick={calculate} variant="accent">{t.btn}</CorpButton>
                 </div>
             );
         };
+
+        // --- Main App ---
 
         const App = () => {
-            const [activeTab, setActiveTab] = useState('normalize');
+            const [tab, setTab] = useState('normalize');
             const [history, setHistory] = useState([]);
+            const [lastResult, setLastResult] = useState(null);
+            const [lang, setLang] = useState('el');
+            const [theme, setTheme] = useState('light');
+
+            const t = resources[lang];
+
+            useEffect(() => {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.body.classList.add('bg-slate-900');
+                    document.body.classList.remove('bg-slate-100');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    document.body.classList.remove('bg-slate-900');
+                    document.body.classList.add('bg-slate-100');
+                }
+            }, [theme]);
 
             const addToHistory = (action, result) => {
-                setHistory(prev => [{ action, result, id: Date.now() }, ...prev].slice(0, 10));
+                setLastResult({ label: action, val: result });
+                setHistory(prev => [{ action, result, id: Date.now() }, ...prev].slice(0, 5));
             };
 
-            const tabs = [
-                { id: 'normalize', icon: Icons.Clock, label: 'Μετατροπή' },
-                { id: 'calc', icon: Icons.Calculator, label: 'Πράξεις' },
-                { id: 'diff', icon: Icons.ArrowRightLeft, label: 'Διαφορά' },
-                { id: 'weekday', icon: Icons.Calendar, label: 'Ημέρα' },
+            const toggleLang = () => {
+                setLang(prev => prev === 'el' ? 'en' : 'el');
+                setLastResult(null);
+            };
+
+            const toggleTheme = () => {
+                setTheme(prev => prev === 'light' ? 'dark' : 'light');
+            };
+
+            const menu = [
+                { id: 'normalize', label: t.menu.normalize, icon: Icons.Time },
+                { id: 'calc', label: t.menu.calc, icon: Icons.Calc },
+                { id: 'diff', label: t.menu.diff, icon: Icons.Diff },
+                { id: 'weekday', label: t.menu.weekday, icon: Icons.Calendar },
             ];
 
             return (
-                <div className="max-w-2xl mx-auto my-10 bg-white rounded-2xl shadow-xl overflow-hidden">
-                    <header className="bg-indigo-600 p-6 text-white text-center">
-                        <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
-                            <Icons.Calendar /> Ημερολόγιο App
-                        </h1>
-                        <p className="text-indigo-100 opacity-90">Εργαλείο διαχείρισης ημερομηνιών</p>
-                    </header>
-
-                    <div className="flex flex-wrap border-b border-gray-200">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex-1 py-4 px-2 text-sm sm:text-base font-medium flex items-center justify-center gap-2 transition-colors
-                                    ${activeTab === tab.id 
-                                    ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' 
-                                    : 'text-gray-500 hover:text-indigo-500 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <tab.icon />
-                                <span className="hidden sm:inline">{tab.label}</span>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="p-6 min-h-[400px]">
-                        {activeTab === 'normalize' && <NormalizeTab onResult={addToHistory} />}
-                        {activeTab === 'calc' && <CalcTab onResult={addToHistory} />}
-                        {activeTab === 'diff' && <DiffTab onResult={addToHistory} />}
-                        {activeTab === 'weekday' && <WeekdayTab onResult={addToHistory} />}
-                    </div>
-
-                    {history.length > 0 && (
-                        <div className="bg-gray-50 p-6 border-t border-gray-200">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-semibold text-gray-700 flex items-center gap-2"><Icons.RotateCcw /> Ιστορικό</h3>
-                                <button onClick={() => setHistory([])} className="text-xs text-red-500 hover:underline">Καθαρισμός</button>
+                <div className="w-full flex flex-col items-center dark:bg-dark-bg min-h-screen">
+                    
+                    {/* Header Strip with Language Toggle */}
+                    <div className="w-full header-bg text-white py-6 shadow-md mb-8">
+                        <div className="max-w-[600px] mx-auto px-6 flex items-center justify-between">
+                            <div>
+                                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{t.title}</h1>
+                                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-1">{t.subtitle}</p>
                             </div>
-                            <ul className="space-y-2">
-                                {history.map((item) => (
-                                    <li key={item.id} className="text-sm bg-white p-2 rounded border border-gray-200 shadow-sm flex justify-between">
-                                        <span className="font-medium text-indigo-600">{item.action}:</span>
-                                        <span className="text-gray-600">{item.result}</span>
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="flex items-center gap-3">
+                                <button onClick={toggleTheme} className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 border border-white/20 transition-all text-xs font-bold" title="Toggle Theme">
+                                    {theme === 'light' ? <Icons.Moon /> : <Icons.Sun />}
+                                </button>
+                                <button onClick={toggleLang} className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 border border-white/20 transition-all text-xs font-bold">
+                                    <Icons.Globe /> {lang === 'el' ? 'EN' : 'GR'}
+                                </button>
+                            </div>
                         </div>
-                    )}
+                    </div>
+
+                    <div className="w-full max-w-[600px] px-4 pb-10 flex flex-col gap-6">
+                        
+                        {/* Main Card */}
+                        <div className="bg-white dark:bg-dark-card rounded-xl shadow-floating border border-slate-200 dark:border-dark-border overflow-hidden transition-colors duration-300">
+                            
+                            {/* Navigation */}
+                            <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 overflow-x-auto no-scrollbar">
+                                {menu.map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => { setTab(item.id); setLastResult(null); }}
+                                        className={`flex-1 py-4 px-4 text-sm font-semibold transition-all flex items-center justify-center gap-2 whitespace-nowrap border-b-2
+                                            ${tab === item.id 
+                                            ? 'bg-white dark:bg-dark-card text-corp-700 dark:text-white border-corp-600' 
+                                            : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                    >
+                                        <span className={tab === item.id ? 'text-corp-600 dark:text-corp-500' : 'text-slate-400 dark:text-slate-500'}>{item.icon()}</span>
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-6 sm:p-8 min-h-[350px] flex flex-col justify-between">
+                                <div className="animate-pop-in">
+                                    {tab === 'normalize' && <NormalizeTab onResult={addToHistory} t={t.normalize} />}
+                                    {tab === 'calc' && <CalcTab onResult={addToHistory} t={t.calc} lang={lang} />}
+                                    {tab === 'diff' && <DiffTab onResult={addToHistory} t={t.diff} />}
+                                    {tab === 'weekday' && <WeekdayTab onResult={addToHistory} t={t.weekday} lang={lang} />}
+                                </div>
+
+                                {lastResult && <ResultBox label={lastResult.label} value={lastResult.val} t={t.copy} />}
+                            </div>
+                        </div>
+
+                        {/* History */}
+                        {history.length > 0 && (
+                            <div className="bg-white dark:bg-dark-card rounded-xl shadow-pro border border-slate-200 dark:border-dark-border p-6 mt-4 transition-colors duration-300">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">{t.history.title}</h3>
+                                    <button onClick={() => setHistory([])} className="text-xs font-semibold text-slate-500 hover:text-red-600 flex items-center gap-1 transition-colors">
+                                        <Icons.Trash /> {t.history.clear}
+                                    </button>
+                                </div>
+                                <div className="space-y-0 divide-y divide-slate-100 dark:divide-slate-700">
+                                    {history.map(item => (
+                                        <div key={item.id} className="flex justify-between items-center py-3 px-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded transition-colors">
+                                            <span className="text-xs font-bold text-corp-600 dark:text-corp-500 uppercase w-32 truncate mr-2">{item.action}</span>
+                                            <span className="text-sm font-medium text-slate-800 dark:text-slate-300 text-right">{item.result}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <footer className="text-center mt-8 pb-4">
+                            <p className="text-xs font-medium text-slate-400">
+                                © 2026 Giorgos Papatsimpas <span className="mx-1">•</span> {t.footer}
+                            </p>
+                        </footer>
+
+                    </div>
+
+                    <ChatBot lang={lang} />
+
                 </div>
             );
         };
